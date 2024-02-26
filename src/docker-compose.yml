@@ -1,0 +1,51 @@
+version: "3"
+
+# Docker volume to have database stored on host machine.
+volumes:
+  db:
+    driver: local
+
+services:
+  database:
+    image: postgres:14-alpine
+    hostname: github-notifications-bot
+    restart: always
+    volumes:
+      - ../db:/var/lib/postgresql/data
+    env_file:
+      - .database.env
+    networks:
+      - github-notifications-bot
+    command:
+      - "postgres"
+      - "-c" # Max connection limit for database.
+      - "max_connections=1000" # SHOW max_connections;
+      - "-c" # Buffer size for database bufferization.
+      - "shared_buffers=128MB" # SHOW shared_buffers;
+  database-poller:
+    image: edoburu/pgbouncer
+    env_file:
+      - .database.env
+    depends_on:
+      - database
+    networks:
+      - github-notifications-bot
+  server:
+    hostname: github-notifications-bot
+    restart: always
+    env_file:
+      - config.env
+    volumes:
+      - ./:/srv
+    depends_on:
+      - database
+      - database-poller
+    links:
+      - database
+    networks:
+      - github-notifications-bot
+    build: .
+
+# Setup docker network for the internal network.
+networks:
+  github-notifications-bot:
