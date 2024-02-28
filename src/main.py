@@ -5,7 +5,7 @@ import sys
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandObject, CommandStart, Command
-from aiogram.utils.formatting import Text, Bold, as_list
+from aiogram.utils.formatting import Text, Bold, as_list, TextLink
 
 from config import settings
 from database import crud
@@ -41,13 +41,14 @@ async def command_notifications(message: types.Message):
         await message.reply("Сначала зарегестрируйтесь с помощью команды /login")
         return
     notifications = get_notifications_by_access_token(access_token=user.gh_access_token, since=user.last_checked)
-    await crud.user.update_last_checked_by_user_id(user_id=user_id)
+    # await crud.user.update_last_checked_by_user_id(user_id=user_id)
     if notifications.totalCount == 0:
         await message.reply("Нет новых уведомлений!")
         return
+    api_url_to_html_url = lambda u: "https://github.com" + u.removeprefix("https://api.github.com/repos")
     content = as_list(
-        Text("Уведомления:"),
-        *[Text(Bold(n.subject.title), f" - {updated_at_to_formatted_timedelta(n.updated_at)}")
+        Bold("Уведомления:"),
+        *[Text(TextLink(n.subject.title, url=api_url_to_html_url(n.subject.url)), f" - {updated_at_to_formatted_timedelta(n.updated_at)}")
           for n in notifications]
     )
     await message.reply(**content.as_kwargs())

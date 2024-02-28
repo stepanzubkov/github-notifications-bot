@@ -23,7 +23,15 @@ def get_notifications_by_access_token(
 
 def updated_at_to_formatted_timedelta(updated_at: datetime) -> str:
     timedelta = datetime.now(timezone.utc) - updated_at
-    hours = timedelta.seconds//3600
+    days = int(timedelta.total_seconds()//86400)
+    if days % 10 == 1 and days % 100 != 11:
+        return f"{days} день назад"
+    elif 1 < days % 10 < 5 and days % 100 - days % 10 != 10:
+        return f"{days} дня назад"
+    elif days > 0:
+        return f"{days} дней назад"
+
+    hours = int(timedelta.total_seconds()//3600)
     if hours % 10 == 1 and hours % 100 != 11:
         return f"{hours} час назад"
     elif 1 < hours % 10 < 5 and hours % 100 - hours % 10 != 10:
@@ -31,7 +39,7 @@ def updated_at_to_formatted_timedelta(updated_at: datetime) -> str:
     elif hours > 0:
         return f"{hours} часов назад"
 
-    minutes = timedelta.seconds % 3600 // 60
+    minutes = int(timedelta.total_seconds() % 3600 // 60)
     if minutes % 10 == 1 and minutes % 100 != 11:
         return f"{minutes} минута назад"
     elif 1 < minutes % 10 < 5 and minutes % 100 - minutes % 10 != 10:
