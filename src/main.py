@@ -4,6 +4,7 @@ import logging
 import sys
 
 from aiogram import Bot, Dispatcher, types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandObject, CommandStart, Command
 from aiogram.utils.formatting import Text, Bold, as_list, TextLink
 
@@ -14,10 +15,18 @@ from services.notifications import get_notifications_by_access_token, updated_at
 
 dp = Dispatcher()
 
+keyboard_reply = ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    keyboard=[[KeyboardButton(text="/notifications")]],
+)
+
+button_mark_as_read = InlineKeyboardButton(text="Пометить все как прочитанные", callback_data="mark_as_read")
+keyboard_inline = InlineKeyboardMarkup(inline_keyboard=[[button_mark_as_read]])
+
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message):
-    await message.reply("Привет")
+    await message.reply("Привет", reply_markup=keyboard_reply)
 
 
 @dp.message(Command("login"))
@@ -41,7 +50,6 @@ async def command_notifications(message: types.Message):
         await message.reply("Сначала зарегестрируйтесь с помощью команды /login")
         return
     notifications = get_notifications_by_access_token(access_token=user.gh_access_token, since=user.last_checked)
-    # await crud.user.update_last_checked_by_user_id(user_id=user_id)
     if notifications.totalCount == 0:
         await message.reply("Нет новых уведомлений!")
         return
@@ -51,7 +59,7 @@ async def command_notifications(message: types.Message):
         *[Text(TextLink(n.subject.title, url=api_url_to_html_url(n.subject.url)), f" - {updated_at_to_formatted_timedelta(n.updated_at)}")
           for n in notifications]
     )
-    await message.reply(**content.as_kwargs())
+    await message.reply(**content.as_kwargs(), reply_markup=keyboard_inline)
 
 
 async def main() -> None:
