@@ -3,15 +3,15 @@ import asyncio
 import logging
 import sys
 
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import CommandObject, CommandStart, Command
+from aiogram.filters import CommandObject, CommandStart, Command, callback_data
 from aiogram.utils.formatting import Text, Bold, as_list, TextLink
 
 from config import settings
 from database import crud
 from database.core import init
-from services.notifications import get_notifications_by_access_token, updated_at_to_formatted_timedelta
+from services.notifications import get_notifications_by_access_token, updated_at_to_formatted_timedelta, mark_notifications_as_read
 
 dp = Dispatcher()
 
@@ -20,7 +20,10 @@ keyboard_reply = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="/notifications")]],
 )
 
-button_mark_as_read = InlineKeyboardButton(text="Пометить все как прочитанные", callback_data="mark_as_read")
+class PlainCallback(callback_data.CallbackData, prefix="plain"):
+    text: str
+
+button_mark_as_read = InlineKeyboardButton(text="Пометить все как прочитанные", callback_data=PlainCallback(text="mark_notifications_as_read").pack())
 keyboard_inline = InlineKeyboardMarkup(inline_keyboard=[[button_mark_as_read]])
 
 
@@ -60,6 +63,17 @@ async def command_notifications(message: types.Message):
           for n in notifications]
     )
     await message.reply(**content.as_kwargs(), reply_markup=keyboard_inline)
+
+
+@dp.callback_query(PlainCallback.filter(F.text == "mark_notifications_as_read"))
+async def callback_mark_notifications_as_read(call: types.CallbackQuery):
+    user_id = call.from_user.id
+    user = await crud.user.get_user_by_user_id(user_id=user_id)
+    if user is None:
+        await call.answer("Сначала зарегестрируйтесь с помощью команды /login")
+        return
+    mark_notifications_as_read(access_token=user.gh_access_token)
+    await call.answer("Все уведомления успешно очищены!")
 
 
 async def main() -> None:

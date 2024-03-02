@@ -18,7 +18,14 @@ def get_notifications_by_access_token(
         notificatons = gh.get_user().get_notifications(since=since)
     else:
         notificatons = gh.get_user().get_notifications()
+        gh.get_user().mark_notifications_as_read
     return notificatons
+
+
+def mark_notifications_as_read(access_token: str) -> None:
+    auth = Auth.Token(access_token)
+    gh = Github(auth=auth)
+    gh.get_user().mark_notifications_as_read()
 
 
 def updated_at_to_formatted_timedelta(updated_at: datetime) -> str:
