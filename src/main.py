@@ -29,7 +29,13 @@ keyboard_inline = InlineKeyboardMarkup(inline_keyboard=[[button_mark_as_read]])
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message):
-    await message.reply("Привет", reply_markup=keyboard_reply)
+    await message.reply(
+        "Github Notifications Bot поможет вам отслеживать свои уведомления с github.com в удобном"
+        "формате.\n Чтобы войти в аккаунт, зайдите в настройки аккаунта на GitHub и сгенерируйте"
+        "API токен с правами доступа на уведомления. Затем введите команду /login <ваш токен>."
+        "Теперь вы можете получить непрочитанные уведомления с помощью команды /notifications.",
+        reply_markup=keyboard_reply,
+    )
 
 
 @dp.message(Command("login"))
